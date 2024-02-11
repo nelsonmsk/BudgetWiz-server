@@ -3,7 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('./../models/user.js'); 
-const extend = require('lodash/extend');
+const extend = require('lodash/extend.js');
 const errorHandler = require('./../../db/helpers/dbErrorHandler');
 const formidable = require('formidable');
 const fs = require('fs');
@@ -12,22 +12,28 @@ const profileImage = ('./../../../client/src/assets/images/profile-pic.jpg');
 	/* create new user. */
 	const create = async (req, res) => {
 		const user = new User(req.body);
-		try {
-			await user.save();
-			return res.status(200).json({
-				message: "Successfully signed up!"
-			})
-		} catch (err) {
-			return res.status(400).json({
-				error: errorHandler.getErrorMessage(err)
-			})
+		let existing_user = await User.findOne({ "email": req.body.email });		
+		if (existing_user){
+			return res.status('401').json({ error: "User already exists" })
+		}else{
+			try {
+
+				await user.save();
+				return res.status(200).json({
+					message: "Successfully signed up!"
+				})
+			} catch (err) {
+				return res.status(400).json({
+					error: errorHandler.getErrorMessage(err)
+				})
+			}
 		}
 	};
 	
 	
 	const list = async (req, res) => {
 		try {
-			let users = await User.find().select('name email updated created');
+			let users = await User.find().select('name email updated hashed_password created');
 			res.json(users);
 		} catch (err) {
 			return res.status(400).json({
@@ -40,13 +46,13 @@ const profileImage = ('./../../../client/src/assets/images/profile-pic.jpg');
 		try {
 			let user = await User.findById(id);
 			if (!user)
-				return res.status('400').json({
+				return res.status(400).json({
 					error: "User not found"
 			})
 			req.profile = user;
 			next();
 		} catch (err) {
-			return res.status('400').json({
+			return res.status(400).json({
 				error: "Could not retrieve user"
 			})
 		}
@@ -54,7 +60,6 @@ const profileImage = ('./../../../client/src/assets/images/profile-pic.jpg');
 	
 	const read = (req, res) => {
 		req.profile.hashed_password = undefined;
-		req.profile.salt = undefined;
 		return res.json(req.profile);
 	};
 	
@@ -66,8 +71,9 @@ const profileImage = ('./../../../client/src/assets/images/profile-pic.jpg');
 				return res.status(400).json({
 					error: "Photo could not be uploaded"
 				})
-			}
-			let user = req.profile;
+			}			
+			let id = req.profile._id;
+			let user = await User.findById(id);
 			user = extend(user, fields);
 			user.updated = Date.now();
 			if(files.photo){
@@ -76,9 +82,9 @@ const profileImage = ('./../../../client/src/assets/images/profile-pic.jpg');
 			}
 			try {
 				await user.save();
-				user.hashed_password = undefined;
-				user.salt = undefined;
-				res.json(user);
+				return res.status(201).json({
+					message: "Successfully updated user:" + id.toLocaleString()
+				})
 			} catch (err) {
 				return res.status(400).json({
 					error: errorHandler.getErrorMessage(err)
@@ -89,11 +95,11 @@ const profileImage = ('./../../../client/src/assets/images/profile-pic.jpg');
 	
 	const remove = async (req, res) => {
 		try {
-			let user = req.profile;
-			let deletedUser = await user.remove();
-			deletedUser.hashed_password = undefined;
-			deletedUser.salt = undefined;
-			res.json(deletedUser);
+			let id = req.profile._id;				
+			await User.findByIdAndDelete(id);
+			return res.status(200).json({
+					message: "Successfully deleted user:" + id.toLocaleString()
+				})
 		} catch (err) {
 			return res.status(400).json({
 				error: errorHandler.getErrorMessage(err)

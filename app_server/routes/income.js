@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-
 const userCtrl = require('./../controllers/user');
 const incomeCtrl = require('./../controllers/income');
 const authCtrl = require('./../controllers/auth');

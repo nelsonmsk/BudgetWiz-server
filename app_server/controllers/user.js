@@ -3,7 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('./../models/user.js'); 
-const extend = require('lodash/extend.js');
+const extend = require('lodash/extend');
 const errorHandler = require('./../../db/helpers/dbErrorHandler');
 const formidable = require('formidable');
 const fs = require('fs');
@@ -14,10 +14,9 @@ const profileImage = ('./../../../client/src/assets/images/profile-pic.jpg');
 		const user = new User(req.body);
 		let existing_user = await User.findOne({ "email": req.body.email });		
 		if (existing_user){
-			return res.status('401').json({ error: "User already exists" })
+			return res.status(401).json({ error: "User already exists" })
 		}else{
 			try {
-
 				await user.save();
 				return res.status(200).json({
 					message: "Successfully signed up!"
@@ -72,9 +71,15 @@ const profileImage = ('./../../../client/src/assets/images/profile-pic.jpg');
 					error: "Photo could not be uploaded"
 				})
 			}			
-			let id = req.profile._id;
-			let user = await User.findById(id);
-			user = extend(user, fields);
+			let user = req.profile;
+			let data = [];
+			if(fields){
+				if(fields.name) data['name'] = fields.name.toLocaleString();
+				if(fields.about) data['about'] = fields.about.toLocaleString();	
+				if(fields.email) data['email'] = fields.email.toLocaleString();
+				if(fields.password) data['password'] = fields.password.toLocaleString();						
+			}
+			user = extend(user, data);
 			user.updated = Date.now();
 			if(files.photo){
 				user.photo.data = fs.readFileSync(files.photo.path);
@@ -83,7 +88,7 @@ const profileImage = ('./../../../client/src/assets/images/profile-pic.jpg');
 			try {
 				await user.save();
 				return res.status(201).json({
-					message: "Successfully updated user:" + id.toLocaleString()
+					message: "Successfully updated user:" 
 				})
 			} catch (err) {
 				return res.status(400).json({

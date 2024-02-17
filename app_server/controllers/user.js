@@ -7,7 +7,7 @@ const extend = require('lodash/extend');
 const errorHandler = require('./../../db/helpers/dbErrorHandler');
 const formidable = require('formidable');
 const fs = require('fs');
-const profileImage = ('./../../../client/src/assets/images/profile-pic.jpg');
+const profileImage = ('./../../assets/images/profile-pic.jpg');
 
 	/* create new user. */
 	const create = async (req, res) => {
@@ -82,8 +82,8 @@ const profileImage = ('./../../../client/src/assets/images/profile-pic.jpg');
 			user = extend(user, data);
 			user.updated = Date.now();
 			if(files.photo){
-				user.photo.data = fs.readFileSync(files.photo.path);
-				user.photo.contentType = files.photo.type;
+				user.photo.data = fs.readFileSync(files.photo[0].filepath);
+				user.photo.contentType = files.photo[0].mimetype;
 			}
 			try {
 				await user.save();

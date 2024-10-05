@@ -47,7 +47,7 @@ const fs = require('fs');
 			let income = await Income.findById(id).populate
 							('recorded_by', '_id name').exec();
 			if (!income)
-				return res.status('400').json({
+				return res.status(400).json({
 					error: "Income record not found"
 				})
 			req.income = income;
